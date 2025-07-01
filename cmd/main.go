@@ -4,23 +4,31 @@ import (
 	extract "awesomeProject/internal/extractor"
 	"fmt"
 	"os"
-	"sort"
 	"strings"
 	"time"
 )
 
+type Article struct {
+	Publisher   string
+	TimeAgo     string
+	TimeMinutes int
+	Title       string
+	URL         string
+	ParsedURL   string
+	CommentsURL string
+}
+
 func main() {
 
 	articles := extract.ExtractLinks()
-	sort.Slice(articles, func(i, j int) bool {
-		return extract.TimeAgoToMinutes(articles[i].TimeAgo) < extract.TimeAgoToMinutes(articles[j].TimeAgo)
-	})
 
 	valideUrl := []string{}
 	notValideUrl := []string{}
 	var sb strings.Builder
+	var allArticles strings.Builder
+	articleLlm := make(map[string]Article)
 
-	for _, value := range articles {
+	for i, value := range articles {
 		fmt.Println(len(valideUrl))
 		fmt.Println(len(notValideUrl))
 		_, body, err := extract.Extract(value.URL)
@@ -34,7 +42,17 @@ func main() {
 			title := fmt.Sprintf("%s - %s", value.Title, value.Publisher)
 			theUrl := fmt.Sprintf("%s", value.URL)
 			theContent := fmt.Sprintf("%s", body)
+			allArticles.WriteString(fmt.Sprintf("%d - %s %s \n", i, title, theUrl))
 			sb.WriteString(title + theUrl + theContent + "\n")
+			articleLlm[value.URL] = Article{
+				Publisher:   value.Publisher,
+				TimeAgo:     value.TimeAgo,
+				TimeMinutes: value.TimeMinutes,
+				Title:       value.Title,
+				URL:         value.URL,
+				ParsedURL:   value.ParsedURL,
+				CommentsURL: value.CommentsURL,
+			}
 		} else {
 			notValideUrl = append(notValideUrl, value.URL)
 		}
@@ -52,5 +70,7 @@ func main() {
 		fmt.Println(err)
 		return
 	}
+	fmt.Println(allArticles.String())
 	fmt.Println("job finished")
+	fmt.Println("------------------", articleLlm["https://github.com/codeddarkness/taco_pardons"])
 }
