@@ -123,7 +123,7 @@ func ExtractLinks() []Article {
 				ParsedURL:   strings.TrimSpace(baseURL),
 				CommentsURL: strings.TrimSpace(commentsURL),
 			}
-			if article.TimeMinutes < 360 {
+			if article.TimeMinutes < 10080 {
 				articles = append(articles, article)
 			}
 		})

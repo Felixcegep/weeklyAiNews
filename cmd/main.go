@@ -2,75 +2,58 @@ package main
 
 import (
 	extract "awesomeProject/internal/extractor"
-	"fmt"
 	"os"
 	"strings"
-	"time"
+
+	//extract "awesomeProject/internal/extractor"
+	llm "awesomeProject/internal/llm"
+	"fmt"
+	//"fmt"
+	//"log"
+	//"os"
+	//"strings"
+	//"time"
 )
 
-type Article struct {
-	Publisher   string
-	TimeAgo     string
-	TimeMinutes int
-	Title       string
-	URL         string
-	ParsedURL   string
-	CommentsURL string
-}
-
 func main() {
-
 	articles := extract.ExtractLinks()
+	for i, article := range articles {
+		fmt.Println(i, article)
+	}
+	var prompt strings.Builder
 
-	valideUrl := []string{}
-	notValideUrl := []string{}
-	var sb strings.Builder
-	var allArticles strings.Builder
-	articleLlm := make(map[string]Article)
+	for i, article := range articles {
+		format := fmt.Sprintf("%d %s %s \n", i, article.Title, article.URL)
+		prompt.WriteString(format)
 
-	for i, value := range articles {
-		fmt.Println(len(valideUrl))
-		fmt.Println(len(notValideUrl))
-		_, body, err := extract.Extract(value.URL)
-		charcount := len([]rune(sb.String()))
-		fmt.Println("actual len ", charcount)
+	}
+	fmt.Println(prompt.String())
+
+	result, err := llm.Llm_choices(prompt.String())
+	if err != nil {
+		fmt.Println(err)
+	}
+	// les liens que l'ia pense important
+	articleValide := result["articles"].([]interface{})
+
+	var allcontent strings.Builder
+	for i, singleLink := range articleValide {
+		urlStr, _ := singleLink.(string)
+		_, body, err := extract.Extract(urlStr)
 		if err != nil {
 			fmt.Println(err)
 		}
+		allcontent.WriteString(body)
 		if len(body) > 50 && len(body) < 50000 {
-			valideUrl = append(valideUrl, value.URL)
-			title := fmt.Sprintf("%s - %s", value.Title, value.Publisher)
-			theUrl := fmt.Sprintf("%s", value.URL)
-			theContent := fmt.Sprintf("%s", body)
-			allArticles.WriteString(fmt.Sprintf("%d - %s %s \n", i, title, theUrl))
-			sb.WriteString(title + theUrl + theContent + "\n")
-			articleLlm[value.URL] = Article{
-				Publisher:   value.Publisher,
-				TimeAgo:     value.TimeAgo,
-				TimeMinutes: value.TimeMinutes,
-				Title:       value.Title,
-				URL:         value.URL,
-				ParsedURL:   value.ParsedURL,
-				CommentsURL: value.CommentsURL,
-			}
+			fmt.Println(i, urlStr)
+			linkformate := fmt.Sprintf("%d, %s, %s \n", i, urlStr, body)
+			allcontent.WriteString(linkformate)
 		} else {
-			notValideUrl = append(notValideUrl, value.URL)
+			fmt.Printf("%d %v is not valid", i, articles)
 		}
 	}
-
-	fmt.Println("valide", valideUrl)
-	fmt.Println("not valide", notValideUrl)
-	fmt.Println("valide number", len(valideUrl))
-	fmt.Println("not valide number", len(notValideUrl))
-	currentTime := time.Now()
-	dateToday := fmt.Sprintf("new-%d-%d-%d.txt", currentTime.Day(), currentTime.Month(), currentTime.Year())
-	err := os.WriteFile("output/"+dateToday, []byte(sb.String()), 0644)
-
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	fmt.Println(allArticles.String())
-	fmt.Println("job finished")
-	fmt.Println("------------------", articleLlm["https://github.com/codeddarkness/taco_pardons"])
+	os.WriteFile("rawtext.txt", []byte(allcontent.String()), 0644)
+	content := llm.LlmSummarization(allcontent.String())
+	fmt.Println(content)
+	os.WriteFile("formatedtext.md", []byte(content), 0644)
 }
