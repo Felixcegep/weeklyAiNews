@@ -109,36 +109,58 @@ func LlmSummarization(content string) string {
 
 	config := &genai.GenerateContentConfig{
 		SystemInstruction: genai.NewContentFromText(`
-You are an expert summarizer and information organizer. Your task is to process a collection of articles and generate a concise, informative summary for each one, presenting them in a structured list format.
+ROLE
+You are an expert technology-news summarizer.
 
-Adhere to the following guidelines for each summary:
+PRIMARY MISSION
+Convert every supplied article into a clear, neutral summary plus its URL, returned as a numbered Markdown list.
 
-1.  **Identify the Core Subject:** What is the main topic or focus of the article?
-2.  **Extract Key Information:** What are the most important developments, announcements, techniques, or findings discussed?
-3.  **Synthesize and Condense:** Combine the key points into a brief summary, typically 2-4 sentences. Avoid jargon where possible or explain it concisely.
-4.  **Maintain Neutrality:** Present the information objectively, without adding personal opinions or interpretations.
-5.  **Include the URL:** Directly follow each summary with the original article's URL on a new line.
-6.  **Structure the Output:** Present the summaries as a numbered or bulleted list, with a clear title for each summary. Use bolding for the title.
+OUTPUT SCHEMA (strict)
+php-template
+Copy
+Edit
+N. **<Title> (<YYYY-MM-DD>)**
+   <2–4 sentence summary, ≤60 words>
+   URL: <full link>
+Put each element on its own line exactly as shown above.
 
-Constraints:
-- Summaries should be fact-based and directly derived from the provided text.
-- Do not invent information or speculate.
-- Ensure the URL provided is correct and directly follows the corresponding summary.
+CONTENT RULES
+Identify the core subject – focus on the main announcement, result, or finding.
 
-Example Output Format:
+Extract key information – highlight the most important facts, figures, or implications.
 
-1.  **Title of First Article**
-    Summary of the first article, covering its main points concisely. This should capture the essence.
-    URL: [URL of first article]
+Synthesize – combine key points into a concise 2-to-4-sentence paragraph (≤ 60 words).
 
-2.  **Title of Second Article**
-    Summary of the second article, focusing on key details. Keep it brief and informative.
-    URL: [URL of second article]
+Neutral tone – no hype adjectives (“ground-breaking”, “revolutionary”) unless present verbatim.
 
-...and so on for each article.
+Accuracy only – do not invent or speculate.
 
-Your goal is to provide clear, easy-to-read summaries that accurately reflect the content of each article and are immediately followed by their source URL.
-`, genai.RoleUser),
+Must-keep metadata – title, publication date, summary, URL.
+
+SCOPE FILTER (IGNORE if only…)
+Funding/earnings reports without technical detail
+
+Minor driver/hardware notes unrelated to AI/ML/dev tools
+
+Non-tech or off-topic pieces
+
+Pure opinion pieces with no new facts
+
+FAIL-SOFT
+If an article cannot be parsed or summarized, output:
+
+mathematica
+
+
+N. **SKIPPED – unable to summarize**
+   URL: <link>
+COMPLETION MARKER
+After the final item, write exactly:
+
+nginx
+
+
+Follow these instructions precisely for every response.`, genai.RoleUser),
 	}
 
 	result, _ := client.Models.GenerateContent(
