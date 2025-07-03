@@ -2,6 +2,7 @@ package main
 
 import (
 	extract "awesomeProject/internal/extractor"
+	"os"
 	"strings"
 	"sync"
 
@@ -60,25 +61,11 @@ func main() {
 		wg.Add(1)
 		go call(article.(string), out, &wg)
 	}
-	for test1 := range out {
-		fmt.Print(test1)
+	var allContent strings.Builder
+	for content := range out {
+		allContent.WriteString(content)
 	}
-	/*
-		for i, singleLink := range articleValide {
-			_, body, err := extract.Extract(singleLink.(string))
-			if err != nil {
-				fmt.Println(err)
-			}
-			if len(body) > 50 && len(body) < 50000 {
-				linkformate := fmt.Sprintf("%d, %s, %s \n", i, singleLink.(string), body)
-				allcontent.WriteString(linkformate)
-			} else {
-				fmt.Printf("%d %v is not valid", i, articles)
-			}
-		}
-		os.WriteFile("rawtext.txt", []byte(allcontent.String()), 0644)
-		content := llm.LlmSummarization(allcontent.String())
-		fmt.Println(content)
-		os.WriteFile("formatedtext.md", []byte(content), 0644)
-	*/
+	os.WriteFile("rawtext.txt", []byte(allContent.String()), 0644)
+	content := llm.LlmSummarization(allContent.String())
+	os.WriteFile("formatedtext.md", []byte(content), 0644)
 }
