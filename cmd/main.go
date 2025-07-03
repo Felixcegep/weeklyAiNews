@@ -4,6 +4,7 @@ import (
 	extract "awesomeProject/internal/extractor"
 	"os"
 	"strings"
+	"sync"
 
 	//extract "awesomeProject/internal/extractor"
 	llm "awesomeProject/internal/llm"
@@ -14,6 +15,20 @@ import (
 	//"strings"
 	//"time"
 )
+
+func call(singleLink string, out chan<- string, wg *sync.WaitGroup) {
+	defer wg.Done()
+	_, body, err := extract.Extract(singleLink)
+	if err != nil {
+		fmt.Println(err)
+		out <- string("")
+	}
+	if len(body) > 50 && len(body) < 50000 {
+		out <- string("link" + singleLink + body + "end article")
+	} else {
+		out <- string("")
+	}
+}
 
 func main() {
 	articles := extract.ExtractLinks()
@@ -27,7 +42,6 @@ func main() {
 		prompt.WriteString(format)
 
 	}
-	fmt.Println(prompt.String())
 
 	result, err := llm.Llm_choices(prompt.String())
 	if err != nil {
@@ -37,16 +51,14 @@ func main() {
 	articleValide := result["articles"].([]interface{})
 
 	var allcontent strings.Builder
+
 	for i, singleLink := range articleValide {
-		urlStr, _ := singleLink.(string)
-		_, body, err := extract.Extract(urlStr)
+		_, body, err := extract.Extract(singleLink.(string))
 		if err != nil {
 			fmt.Println(err)
 		}
-		allcontent.WriteString(body)
 		if len(body) > 50 && len(body) < 50000 {
-			fmt.Println(i, urlStr)
-			linkformate := fmt.Sprintf("%d, %s, %s \n", i, urlStr, body)
+			linkformate := fmt.Sprintf("%d, %s, %s \n", i, singleLink.(string), body)
 			allcontent.WriteString(linkformate)
 		} else {
 			fmt.Printf("%d %v is not valid", i, articles)
