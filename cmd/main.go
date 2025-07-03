@@ -2,7 +2,6 @@ package main
 
 import (
 	extract "awesomeProject/internal/extractor"
-	"os"
 	"strings"
 	"sync"
 
@@ -49,23 +48,37 @@ func main() {
 	}
 	// les liens que l'ia pense important
 	articleValide := result["articles"].([]interface{})
+	// for channel requierement
+	var wg sync.WaitGroup
+	out := make(chan string)
+	go func() {
+		wg.Wait()
+		close(out)
+	}()
 
-	var allcontent strings.Builder
-
-	for i, singleLink := range articleValide {
-		_, body, err := extract.Extract(singleLink.(string))
-		if err != nil {
-			fmt.Println(err)
-		}
-		if len(body) > 50 && len(body) < 50000 {
-			linkformate := fmt.Sprintf("%d, %s, %s \n", i, singleLink.(string), body)
-			allcontent.WriteString(linkformate)
-		} else {
-			fmt.Printf("%d %v is not valid", i, articles)
-		}
+	for _, article := range articleValide {
+		wg.Add(1)
+		go call(article.(string), out, &wg)
 	}
-	os.WriteFile("rawtext.txt", []byte(allcontent.String()), 0644)
-	content := llm.LlmSummarization(allcontent.String())
-	fmt.Println(content)
-	os.WriteFile("formatedtext.md", []byte(content), 0644)
+	for test1 := range out {
+		fmt.Print(test1)
+	}
+	/*
+		for i, singleLink := range articleValide {
+			_, body, err := extract.Extract(singleLink.(string))
+			if err != nil {
+				fmt.Println(err)
+			}
+			if len(body) > 50 && len(body) < 50000 {
+				linkformate := fmt.Sprintf("%d, %s, %s \n", i, singleLink.(string), body)
+				allcontent.WriteString(linkformate)
+			} else {
+				fmt.Printf("%d %v is not valid", i, articles)
+			}
+		}
+		os.WriteFile("rawtext.txt", []byte(allcontent.String()), 0644)
+		content := llm.LlmSummarization(allcontent.String())
+		fmt.Println(content)
+		os.WriteFile("formatedtext.md", []byte(content), 0644)
+	*/
 }
