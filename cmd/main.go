@@ -65,7 +65,7 @@ func main() {
 	for content := range out {
 		allContent.WriteString(content)
 	}
-	os.WriteFile("rawtext.txt", []byte(allContent.String()), 0644)
+	os.WriteFile("output/rawtext.txt", []byte(allContent.String()), 0644)
 	content := llm.LlmSummarization(allContent.String())
-	os.WriteFile("formatedtext.md", []byte(content), 0644)
+	os.WriteFile("output/formatedtext.md", []byte(content), 0644)
 }
