@@ -20,7 +20,7 @@ func call(singleLink string, out chan<- string, wg *sync.WaitGroup) {
 	defer wg.Done()
 	_, body, err := extract.Extract(singleLink)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println(singleLink, err)
 		out <- string("")
 	}
 	if len(body) > 50 && len(body) < 50000 {
