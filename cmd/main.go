@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	//extract "awesomeProject/internal/extractor"
 	llm "awesomeProject/internal/llm"
@@ -65,7 +66,9 @@ func main() {
 	for content := range out {
 		allContent.WriteString(content)
 	}
+	timetoday := time.Now()
+	dateformated := fmt.Sprintf("%d-%d-%d", timetoday.Year(), timetoday.Month(), timetoday.Day())
 	os.WriteFile("output/rawtext.txt", []byte(allContent.String()), 0644)
 	content := llm.LlmSummarization(allContent.String())
-	os.WriteFile("output/formatedtext.md", []byte(content), 0644)
+	os.WriteFile("output/"+dateformated+".md", []byte(content), 0644)
 }
